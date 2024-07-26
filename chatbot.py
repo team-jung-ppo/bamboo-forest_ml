@@ -1,47 +1,42 @@
-import streamlit as st
-from streamlit_chat import message
+import time
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import json
+from prompt_toolkit import prompt
 
-@st.cache(allow_output_mutation=True)
-def cached_model():
-    model = SentenceTransformer('jhgan/ko-sroberta-multitask')
-    return model
+# 모델 로드
+start_time = time.time()
+model = SentenceTransformer('jhgan/ko-sroberta-multitask')
+print(f"모델 로딩 시간: {time.time() - start_time:.2f}초")
 
-@st.cache(allow_output_mutation=True)
-def get_dataset():
-    df = pd.read_csv('wellness_dataset.csv')
-    df['embedding'] = df['embedding'].apply(json.loads)
-    return df
+# 데이터셋 로드
+start_time = time.time()
+df = pd.read_csv('wellness_dataset.csv')
+df['embedding'] = df['embedding'].apply(json.loads)
+print(f"데이터셋 로딩 시간: {time.time() - start_time:.2f}초")
 
-model = cached_model()
-df = get_dataset()
-
-st.header('심리상담 챗봇')
-st.markdown("[❤️빵형의 개발도상국](https://www.youtube.com/c/빵형의개발도상국)")
-
-if 'generated' not in st.session_state:
-    st.session_state['generated'] = []
-
-if 'past' not in st.session_state:
-    st.session_state['past'] = []
-
-with st.form('form', clear_on_submit=True):
-    user_input = st.text_input('당신: ', '')
-    submitted = st.form_submit_button('전송')
-
-if submitted and user_input:
+def get_answer(user_input):
+    start_time = time.time()
     embedding = model.encode(user_input)
+    print(f"인코딩 시간: {time.time() - start_time:.2f}초")
 
+    start_time = time.time()
     df['distance'] = df['embedding'].map(lambda x: cosine_similarity([embedding], [x]).squeeze())
+    print(f"유사도 계산 시간: {time.time() - start_time:.2f}초")
+
     answer = df.loc[df['distance'].idxmax()]
+    return answer['챗봇']
 
-    st.session_state.past.append(user_input)
-    st.session_state.generated.append(answer['챗봇'])
+def main():
+    print("심리상담 챗봇에 오신 것을 환영합니다! (종료하려면 'exit' 입력)")
+    while True:
+        user_input = prompt("당신: ")
+        if user_input.lower() == 'exit':
+            print("챗봇: 대화를 종료합니다. 좋은 하루 되세요!")
+            break
+        response = get_answer(user_input)
+        print(f"챗봇: {response}")
 
-for i in range(len(st.session_state['past'])):
-    message(st.session_state['past'][i], is_user=True, key=str(i) + '_user')
-    if len(st.session_state['generated']) > i:
-        message(st.session_state['generated'][i], key=str(i) + '_bot')
+if __name__ == "__main__":
+    main()
