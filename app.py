@@ -14,7 +14,7 @@ def load_dataset(chatBotType):
     # chatBotType에 따라 다른 CSV 파일을 로드합니다.
     csv_files = {
         "아저씨": "oldman_dataset.csv",
-        "기본": "wellness_dataset.csv"
+        "아줌마": "wellness_dataset.csv"
         # 필요한 다른 타입의 데이터셋 파일들을 여기에 추가
     }
     
