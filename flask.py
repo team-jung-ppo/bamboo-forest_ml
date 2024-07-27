@@ -3,18 +3,31 @@ import pandas as pd
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import json
-import math
+import os
 
 app = Flask(__name__)
 
 # 모델 로드
 model = SentenceTransformer('jhgan/ko-sroberta-multitask')
 
-# 데이터셋 로드
-df = pd.read_csv('wellness_dataset.csv')
-df['embedding'] = df['embedding'].apply(json.loads)
+def load_dataset(chatBotType):
+    # chatBotType에 따라 다른 CSV 파일을 로드합니다.
+    csv_files = {
+        "아저씨": "wellness_dataset.csv",
+        "다른타입": "another_dataset.csv"
+        # 필요한 다른 타입의 데이터셋 파일들을 여기에 추가
+    }
+    
+    # 기본값은 '아저씨'로 설정
+    csv_file = csv_files.get(chatBotType, "wellness_dataset.csv")
+    
+    # 데이터셋 로드
+    df = pd.read_csv(csv_file)
+    df['embedding'] = df['embedding'].apply(json.loads)
+    return df
 
-def get_answer(user_input):
+def get_answer(user_input, chatBotType):
+    df = load_dataset(chatBotType)
     embedding = model.encode(user_input)
     embeddings = list(df['embedding'])
     distances = cosine_similarity([embedding], embeddings).squeeze()
@@ -25,7 +38,8 @@ def get_answer(user_input):
 def get_response():
     data = request.json
     user_input = data.get("message")
-    response = get_answer(user_input)
+    chatBotType = data.get("chatBotType", "아저씨")
+    response = get_answer(user_input, chatBotType)
     return jsonify({"response": response})
 
 if __name__ == '__main__':
