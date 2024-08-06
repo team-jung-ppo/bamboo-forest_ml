@@ -4,53 +4,51 @@ pre-trained된 모델이 사용자 입력을 encode한 값과
 wellness_dataset과 코사인 유사도를 계산하여 가장 높은 것과 매칭
 '''
 
-import time
 import pandas as pd
 from sentence_transformers import SentenceTransformer
 from sklearn.metrics.pairwise import cosine_similarity
 import json
-from prompt_toolkit import prompt
+import os
 
 # 모델 로드
-start_time = time.time()
 model = SentenceTransformer('jhgan/ko-sroberta-multitask')
-print(f"모델 로딩 시간: {time.time() - start_time:.2f}초")
 
-# 데이터셋 로드
-start_time = time.time()
-df = pd.read_csv('wellness_dataset.csv')
-df['embedding'] = df['embedding'].apply(json.loads)
-print(f"데이터셋 로딩 시간: {time.time() - start_time:.2f}초")
-
-def get_answer(user_input, context):
-    # 입력 문장과 문맥을 결합
-    combined_input = context + " " + user_input
+def load_dataset(chatBotType):
+    # chatBotType에 따라 다른 CSV 파일을 로드합니다.
+    csv_files = {
+        "아저씨": "oldman_dataset.csv",
+        "아줌마": "oldgirl_dataset.csv"
+        # 필요한 다른 타입의 데이터셋 파일들을 여기에 추가
+    }
     
-    # 사용자 입력 인코딩
-    start_time = time.time()
-    embedding = model.encode(combined_input)
-    print(f"인코딩 시간: {time.time() - start_time:.2f}초")
+    # 기본값은 '아저씨'로 설정
+    csv_file = csv_files.get(chatBotType, "oldman_dataset.csv")
+    
+    # 데이터셋 로드
+    df = pd.read_csv(csv_file)
+    df['embedding'] = df['embedding'].apply(json.loads)
+    return df
 
-    # 유사도 계산
-    start_time = time.time()
-    df['distance'] = df['embedding'].map(lambda x: cosine_similarity([embedding], [x]).squeeze())
-    print(f"유사도 계산 시간: {time.time() - start_time:.2f}초")
-
-    # 가장 유사한 답변 찾기
-    answer = df.loc[df['distance'].idxmax()]
-    return answer['챗봇'], combined_input
+def get_answer(user_input, chatBotType):
+    df = load_dataset(chatBotType)
+    embedding = model.encode(user_input)
+    embeddings = list(df['embedding'])
+    distances = cosine_similarity([embedding], embeddings).squeeze()
+    answer = df.iloc[distances.argmax()]
+    return answer['챗봇']
 
 def main():
     print("심리상담 챗봇에 오신 것을 환영합니다! (종료하려면 'exit' 입력)")
-    context = ''
+    chatBotType = input("챗봇 타입을 입력하세요 (아저씨, 아줌마): ")
+    
     while True:
-        user_input = prompt("당신: ")
+        user_input = input("당신: ")
         if user_input.lower() == 'exit':
             print("챗봇: 대화를 종료합니다. 좋은 하루 되세요!")
             break
-        response, context = get_answer(user_input, context)
+        
+        response = get_answer(user_input, chatBotType)
         print(f"챗봇: {response}")
 
 if __name__ == "__main__":
     main()
-
