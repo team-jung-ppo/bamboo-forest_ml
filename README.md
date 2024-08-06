@@ -10,6 +10,7 @@
 맞게 csv파일을 로드해서 코사인 유사도를 구해서 가장 높은 값을 가지는 챗봇의 응답을 도출합니다.
 (챗봇타입을 설정하지 않는다면 자동적으로 아저씨 버전으로 진행됩니다)
 ### 아저씨 챗봇
-oldman_dataset.csv파일 사용
+![image](https://github.com/user-attachments/assets/6674ab0c-fdae-43a5-9e47-cbbf78bf6953)
 ### 아줌마 챗봇
-oldgirl_dataset.csv파일 사용
+![image](https://github.com/user-attachments/assets/63ef2eda-25f9-4b70-880d-ad0091146f64)
+
